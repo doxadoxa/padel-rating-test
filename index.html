@@ -1,0 +1,524 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Твой психологический рейтинг в racket.id</title>
+<meta name="description" content="Научно необоснованный тест: какой у тебя рейтинг в падел, если честно">
+<style>
+  :root {
+    --bg: #0b1a2e;
+    --court: #12345a;
+    --court-2: #184576;
+    --line: rgba(255,255,255,.14);
+    --ball: #d8ff3c;
+    --ball-ink: #142000;
+    --text: #f2f6fb;
+    --muted: #9fb3c8;
+    --danger: #ff6b6b;
+    --radius: 18px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+    color: var(--text);
+    background:
+      radial-gradient(1200px 600px at 50% -10%, #1d4f86 0%, transparent 60%),
+      var(--bg);
+    -webkit-font-smoothing: antialiased;
+    display: flex;
+    justify-content: center;
+    padding: 24px 16px 48px;
+    min-height: 100%;
+  }
+  .wrap { width: 100%; max-width: 560px; }
+
+  header { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+  .logo {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: var(--ball);
+    box-shadow: inset -4px -4px 0 rgba(0,0,0,.12);
+    position: relative; flex: none;
+  }
+  .logo::before {
+    content: ""; position: absolute; inset: 4px; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,.85); border-color: rgba(255,255,255,.85) transparent;
+  }
+  .brand { font-weight: 700; letter-spacing: -.01em; }
+  .brand small { display: block; font-weight: 500; color: var(--muted); font-size: 12px; }
+
+  .card {
+    background: linear-gradient(180deg, var(--court-2), var(--court));
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 24px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.35);
+    position: relative;
+    overflow: hidden;
+  }
+  /* court lines */
+  .card::before {
+    content: ""; position: absolute; inset: 10px; border: 1px solid rgba(255,255,255,.06);
+    border-radius: 12px; pointer-events: none;
+  }
+  .card::after {
+    content: ""; position: absolute; left: 10px; right: 10px; top: 50%;
+    border-top: 1px dashed rgba(255,255,255,.05); pointer-events: none;
+  }
+  .card > * { position: relative; z-index: 1; }
+
+  h1 { font-size: 28px; line-height: 1.15; margin: 0 0 12px; letter-spacing: -.02em; text-wrap: balance; }
+  h2 { font-size: 21px; line-height: 1.25; margin: 0 0 18px; letter-spacing: -.01em; text-wrap: balance; }
+  p { color: var(--muted); line-height: 1.5; margin: 0 0 14px; }
+  .fine { font-size: 12px; color: var(--muted); opacity: .8; }
+
+  .btn {
+    appearance: none; border: 0; cursor: pointer;
+    font: inherit; font-weight: 700; font-size: 16px;
+    padding: 14px 20px; border-radius: 999px;
+    background: var(--ball); color: var(--ball-ink);
+    transition: transform .12s ease, box-shadow .12s ease;
+    box-shadow: 0 6px 0 #9fbf1f;
+  }
+  .btn:hover { transform: translateY(-1px); }
+  .btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #9fbf1f; }
+  .btn.ghost { background: transparent; color: var(--text); box-shadow: inset 0 0 0 1.5px var(--line); }
+  .btn.ghost:active { box-shadow: inset 0 0 0 1.5px var(--line); }
+  .btn:focus-visible, .opt:focus-visible { outline: 3px solid var(--ball); outline-offset: 3px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
+
+  .progress { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+  .bar { flex: 1; height: 8px; background: rgba(255,255,255,.08); border-radius: 99px; overflow: hidden; }
+  .bar > i { display: block; height: 100%; width: 0; background: var(--ball); border-radius: 99px; transition: width .35s ease; }
+  .count { font-variant-numeric: tabular-nums; font-size: 13px; color: var(--muted); min-width: 44px; text-align: right; }
+
+  .opts { display: grid; gap: 10px; }
+  .opt {
+    appearance: none; text-align: left; font: inherit; color: var(--text);
+    background: rgba(255,255,255,.05);
+    border: 1.5px solid var(--line);
+    border-radius: 14px; padding: 14px 16px; cursor: pointer;
+    line-height: 1.35; font-size: 15.5px;
+    transition: background .12s ease, border-color .12s ease, transform .12s ease;
+  }
+  .opt:hover { background: rgba(255,255,255,.09); border-color: rgba(255,255,255,.28); }
+  .opt:active { transform: scale(.985); }
+  .opt.picked { background: var(--ball); color: var(--ball-ink); border-color: var(--ball); }
+
+  .q-enter { animation: enter .28s ease both; }
+  @keyframes enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+  .quip {
+    min-height: 22px; margin-top: 14px; font-size: 14px; color: var(--ball);
+    opacity: 0; transition: opacity .2s ease;
+  }
+  .quip.show { opacity: 1; }
+
+  /* result */
+  .score {
+    font-size: 76px; font-weight: 800; letter-spacing: -.04em; line-height: 1;
+    font-variant-numeric: tabular-nums; color: var(--ball);
+    margin: 6px 0 4px;
+  }
+  .tier-name { font-size: 22px; font-weight: 700; margin: 0 0 12px; }
+  .scale { margin: 22px 0 8px; }
+  .scale-track {
+    position: relative; height: 12px; border-radius: 99px;
+    background: linear-gradient(90deg, #3b5f86, #4f8fc0 25%, #6fc3a5 45%, #c7e34a 65%, #ffb238 82%, #ff5a5a);
+  }
+  .scale-pin {
+    position: absolute; top: 50%; width: 22px; height: 22px; border-radius: 50%;
+    background: var(--ball); border: 3px solid var(--bg);
+    transform: translate(-50%, -50%); left: 0;
+    transition: left 1.6s cubic-bezier(.2,.8,.2,1);
+    box-shadow: 0 0 0 3px rgba(216,255,60,.35);
+  }
+  .scale-labels {
+    display: flex; justify-content: space-between; font-size: 11px; color: var(--muted);
+    margin-top: 8px; font-variant-numeric: tabular-nums;
+  }
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 18px 0 4px; }
+  .stat { background: rgba(0,0,0,.18); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  .stat b { display: block; font-size: 20px; font-variant-numeric: tabular-nums; }
+  .stat span { font-size: 12px; color: var(--muted); }
+  .verdict { color: var(--text); }
+  ul.tips { margin: 6px 0 0; padding-left: 18px; color: var(--muted); line-height: 1.55; }
+  .toast {
+    position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(20px);
+    background: var(--ball); color: var(--ball-ink); font-weight: 700;
+    padding: 10px 16px; border-radius: 99px; opacity: 0; transition: .2s ease; pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .hidden { display: none !important; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo" aria-hidden="true"></div>
+    <div class="brand">racket.id <small>Отдел психологической диагностики</small></div>
+  </header>
+
+  <!-- START -->
+  <section class="card" id="start">
+    <h1>Какой у тебя психологический рейтинг в racket.id?</h1>
+    <p>Не тот, который показывает приложение после того, как ты слил три матча подряд с «новичками». А тот, который у тебя в голове.</p>
+    <p>12 вопросов. Отвечай честно. Партнёр не увидит. Наверное.</p>
+    <div class="row">
+      <button class="btn" id="go">Погнали на корт</button>
+    </div>
+    <p class="fine" style="margin-top:18px">Тест одобрен ассоциацией людей, которые говорят «я обычно лучше играю».</p>
+  </section>
+
+  <!-- QUIZ -->
+  <section class="card hidden" id="quiz" aria-live="polite">
+    <div class="progress">
+      <div class="bar"><i id="bar"></i></div>
+      <div class="count" id="count">1/12</div>
+    </div>
+    <div id="qbox"></div>
+    <div class="quip" id="quip"></div>
+  </section>
+
+  <!-- RESULT -->
+  <section class="card hidden" id="result">
+    <p class="fine" style="margin:0">Твой психологический рейтинг</p>
+    <div class="score" id="score">0</div>
+    <div class="tier-name" id="tier"></div>
+    <p class="verdict" id="verdict"></p>
+
+    <div class="scale" aria-hidden="true">
+      <div class="scale-track"><div class="scale-pin" id="pin"></div></div>
+      <div class="scale-labels"><span>0</span><span>1000</span><span>2000</span><span>3000</span><span>4000+</span></div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><b id="real">—</b><span>Реальный рейтинг (не показывай)</span></div>
+      <div class="stat"><b id="partner">—</b><span>Как тебя видит партнёр</span></div>
+      <div class="stat"><b id="excuse">—</b><span>Главная отмазка</span></div>
+      <div class="stat"><b id="shot">—</b><span>Фирменный удар</span></div>
+    </div>
+
+    <p style="margin-top:16px;margin-bottom:4px" class="verdict"><b>Рекомендации специалиста:</b></p>
+    <ul class="tips" id="tips"></ul>
+
+    <div class="row">
+      <button class="btn" id="share">Похвастаться</button>
+      <button class="btn ghost" id="again">Перепройти (вдруг выйдет больше)</button>
+    </div>
+    <p class="fine" style="margin-top:18px">Результат не является официальным рейтингом racket.id и не принимается при записи на турниры. Мы пробовали.</p>
+  </section>
+</div>
+<div class="toast" id="toast">Скопировано, неси в чат</div>
+
+<script>
+// Each answer has a rating "vote" (r). Final rating is a weighted average of votes + a bit of chaos.
+const QUESTIONS = [
+  {
+    q: "Что такое бандеха?",
+    a: [
+      { t: "Блюдо грузинской кухни, с ткемали норм", r: 80 },
+      { t: "Это когда бьёшь над головой, но не смэш… кажется", r: 700 },
+      { t: "Делаю её на автомате, даже когда надо было смэшить", r: 1700 },
+      { t: "Отличаю бандеху от вибору и могу объяснить разницу трезвым", r: 3200 },
+    ],
+    quips: ["Ткемали к бандехе не подают", "Главное уверенно", "Знакомо", "Тренер, это вы?"]
+  },
+  {
+    q: "Мяч отскочил от задней стенки и летит к тебе. Твои действия?",
+    a: [
+      { t: "Кричу «ОЙ» и закрываю лицо ракеткой", r: 60 },
+      { t: "Бью по нему до стенки, стенка — это страшно", r: 450 },
+      { t: "Даю отскочить и аккуратно выношу лоб", r: 1400 },
+      { t: "Специально жду стекло. Это был мой план с самого начала", r: 2600 },
+      { t: "Ору «¡Vamos!» и закидываю бахадиту в ноги", r: 3900 },
+    ],
+    quips: ["Ракетка защитит", "Стенка не кусается. Обычно", "База", "Ты страшный человек", "Кто тебя пустил на любительский корт"]
+  },
+  {
+    q: "Сколько у тебя ракеток?",
+    a: [
+      { t: "Беру в аренду. Ту, что с наклейкой «№7»", r: 100 },
+      { t: "Одна, из Декатлона, верой и правдой", r: 600 },
+      { t: "Две: обычная и «на соревы»", r: 1500 },
+      { t: "Пять. Ни одна не подходит. Ищу шестую", r: 2000 },
+      { t: "Мне их присылают бесплатно и просят выложить сторис", r: 4000 },
+    ],
+    quips: ["№7 — счастливая", "Уважаем", "«На соревы» ни разу не доставалась", "Дело не в ракетке, бро", "Ну конечно"]
+  },
+  {
+    q: "Партнёр пропустил лёгкий мяч. Что говоришь?",
+    a: [
+      { t: "«Сорри!» — даже если это был не я", r: 150 },
+      { t: "«Твой!» — когда мяч уже пролетел", r: 650 },
+      { t: "«Нормально, следующий»", r: 1500 },
+      { t: "Ничего. Смотрю на него 4 секунды. Он всё понимает", r: 2500 },
+      { t: "Тактический разбор на испанском, с рисунком на стекле", r: 3600 },
+    ],
+    quips: ["Самый вежливый на корте", "Классика", "Лучший партнёр месяца", "Психологическое давление засчитано", "Galán, перестань"]
+  },
+  {
+    q: "Где ты обычно стоишь во время розыгрыша?",
+    a: [
+      { t: "У задней стенки. Там безопасно и можно опереться", r: 120 },
+      { t: "Где-то посередине, в «зоне смерти»", r: 500 },
+      { t: "Выхожу к сетке после хорошего лоба", r: 1600 },
+      { t: "Живу у сетки, плачу там аренду", r: 2700 },
+    ],
+    quips: ["Стенка — твой друг", "Мячи в ноги — твоя судьба", "Учебник", "Соседи жалуются"]
+  },
+  {
+    q: "Что такое чикита?",
+    a: [
+      { t: "Банан. Ну, марка бананов", r: 80 },
+      { t: "Слышал, но бью всегда со всей силы, так надёжнее", r: 600 },
+      { t: "Мягко в ноги тем, кто у сетки. Работает", r: 1900 },
+      { t: "Мой основной язык общения с соперниками", r: 3100 },
+    ],
+    quips: ["Вкусно, но мимо", "Сила есть — ума не надо", "Мерзко. Уважаем", "Соперники тебя ненавидят"]
+  },
+  {
+    q: "Как ты разминаешься перед игрой?",
+    a: [
+      { t: "Кофе и тяжёлый вздох на парковке", r: 150 },
+      { t: "Пара ударов — и погнали, на счёт", r: 750 },
+      { t: "Минут 10: у сетки, лобы, пару смэшей", r: 1500 },
+      { t: "Резинки, мобилити, сплит-степ, дыхание по квадрату", r: 2800 },
+      { t: "Разминаюсь первым сетом против вас", r: 3700 },
+    ],
+    quips: ["Подколенное сухожилие уже ноет", "Первый гейм — это и есть разминка", "Взрослый человек", "Ты слишком серьёзный", "Обидно было"]
+  },
+  {
+    q: "Что такое x3 (por tres)?",
+    a: [
+      { t: "Умножение на три. Ты норм?", r: 100 },
+      { t: "Видел в рилсах, лайкнул", r: 800 },
+      { t: "Пробовал. Мяч улетел на соседний корт к детям", r: 1700 },
+      { t: "Делаю, но только на тренировке, в матче страшно", r: 2700 },
+      { t: "Делаю в матче, под аплодисменты кафе за стеклом", r: 4000 },
+    ],
+    quips: ["Математика сильна", "Рилсы — тоже тренировка", "Дети в порядке?", "Честно", "Покажи видео или не было"]
+  },
+  {
+    q: "Подача. Какая у тебя стратегия?",
+    a: [
+      { t: "Попасть. Куда-нибудь. Пожалуйста", r: 100 },
+      { t: "Сильно в центр, и будь что будет", r: 650 },
+      { t: "В стекло, с подрезкой, чтобы низко отскочила", r: 1700 },
+      { t: "Разная каждый раз, читаю принимающего по глазам", r: 2900 },
+    ],
+    quips: ["Молитва — тоже стратегия", "Хаос работает до 1000", "Неприятный ты тип", "Экстрасенс"]
+  },
+  {
+    q: "Сколько раз в неделю играешь?",
+    a: [
+      { t: "Раз в месяц, когда зовут на корпоратив", r: 150 },
+      { t: "Раз в неделю, если не дождь и не лень", r: 700 },
+      { t: "2–3 раза, падел — моя терапия", r: 1500 },
+      { t: "Каждый день. Жена ушла, но рейтинг растёт", r: 2600 },
+      { t: "Это моя работа", r: 4000 },
+    ],
+    quips: ["Тимбилдинг засчитан", "Стабильность", "Дешевле психолога", "Сочувствуем. Поздравляем", "Зачем ты проходишь этот тест"]
+  },
+  {
+    q: "Что у тебя болит?",
+    a: [
+      { t: "Ничего, я играл всего два раза", r: 120 },
+      { t: "Немного локоть, но это от ноутбука", r: 800 },
+      { t: "Наколенник, налокотник, тейп — полный комплект", r: 1900 },
+      { t: "Мой физиотерапевт знает моих детей по именам", r: 3000 },
+    ],
+    quips: ["Пока что", "Ага, от ноутбука", "Киборг-падельщик", "Это и есть путь"]
+  },
+  {
+    q: "Ты проиграл матч 2:6 2:6. Почему?",
+    a: [
+      { t: "А разве мы не просто так играли?", r: 150 },
+      { t: "Солнце, ветер, корт скользкий, ракетка не моя", r: 750 },
+      { t: "Партнёр сегодня был не в форме", r: 1400 },
+      { t: "Тестировал новую тактику. Данные собраны", r: 2300 },
+      { t: "Я не проигрываю 2:6 2:6", r: 3800 },
+    ],
+    quips: ["Чистая душа", "Полный набор отмазок", "Как всегда", "Учёный", "Ну-ну"]
+  },
+];
+
+const TIERS = [
+  { max: 300,  name: "Совсем новичок",        emoji: "🐣",
+    verdict: "Ты на корте как котёнок на льду: мило, трогательно и мячи летят куда угодно. Зато у тебя самый большой потенциал роста. Буквально любой.",
+    tips: ["Перестань извиняться после каждого удара", "Стекло — не враг, дай мячу отскочить", "Купи свою ракетку, №7 устала"] },
+  { max: 1000, name: "Ну более-менее",          emoji: "🙂",
+    verdict: "Ты уже знаешь, где сетка, и иногда через неё попадаешь. Говоришь «бандеха» уверенно, хотя делаешь что-то своё. Это нормально, все так начинали.",
+    tips: ["Выходи к сетке, там не страшно", "Не бей со всей силы каждый мяч", "Выучи, как считать очки, хотя бы до 40"] },
+  { max: 1500, name: "В целом играющий",        emoji: "😎",
+    verdict: "Тебя зовут в группы, ты знаешь всех в клубе и хотя бы раз говорил «я сегодня не в форме». Стабильный, надёжный, слегка самоуверенный.",
+    tips: ["Хватит лупить смэш с задней линии", "Чикита — твой новый лучший друг", "Посмотри на свою позицию на видео. Да, это больно"] },
+  { max: 2000, name: "Хорошо играющий",         emoji: "🔥",
+    verdict: "Ты уже раздражаешь людей с рейтингом 1000 и сам раздражаешься на партнёров. Твои лобы противные, а «Твой!» звучит как приказ.",
+    tips: ["Перестань объяснять партнёру, как надо", "Вибора сама себя не выучит", "Иди на турнир, хватит доминировать в американо"] },
+  { max: 3000, name: "Очень хорошо играющий",   emoji: "🦾",
+    verdict: "С тобой хотят играть все, но против тебя — никто. У тебя есть фирменный удар, ты знаешь, что такое бахадита, и у тебя точно есть свой тренер.",
+    tips: ["Удали из друзей тех, кто зовёт «просто покидать»", "Перестань выкладывать x3 в сторис", "Физиотерапевт — не роскошь"] },
+  { max: 4000, name: "Полупрофик",              emoji: "🏆",
+    verdict: "Ты в шаге от того, чтобы бросить работу. Возможно, уже бросил. Любители считают тебя профи, профи считают тебя любителем. Это и есть боль полупрофика.",
+    tips: ["Не играй с друзьями на деньги, это нечестно", "Начни тренировать — заработаешь на ракетки", "Испанский сам себя не выучит"] },
+  { max: Infinity, name: "Профик",              emoji: "👑",
+    verdict: "Ты либо Аги Галан, либо врёшь в тесте. Скорее второе. Но если первое — Агустин, оставь автограф и верни нам рейтинг.",
+    tips: ["Закрой этот тест и иди тренируйся", "Возьми нас в спарринг", "Расскажи секрет бахадиты"] },
+];
+
+const EXCUSES = ["Ветер", "Солнце в глаза", "Скользкий корт", "Новая ракетка", "Партнёр", "Не выспался", "Мячи лысые", "Вчерашнее пиво", "Стекло грязное", "Не размялся"];
+const SHOTS_BY_TIER = [
+  ["Мимо мяча", "Удар в сетку", "Самоаут"],
+  ["Свеча в потолок", "Плоский в стекло", "«Ой, извини»"],
+  ["Лоб в аут", "Смэш в сетку", "Бандеха-по-своему"],
+  ["Противный лоб", "Бандеха", "Чикита"],
+  ["Вибора", "Бахадита", "x3 на тренировке"],
+  ["x4", "Гансо", "Контрпаред"],
+  ["Всё сразу", "Взгляд через сетку", "Por cuatro в аут на улицу"],
+];
+
+const $ = id => document.getElementById(id);
+let idx = 0, votes = [], locked = false;
+
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+
+function show(id) {
+  ["start", "quiz", "result"].forEach(s => $(s).classList.toggle("hidden", s !== id));
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function start() {
+  idx = 0; votes = []; show("quiz"); render();
+}
+
+function render() {
+  const item = QUESTIONS[idx];
+  $("count").textContent = `${idx + 1}/${QUESTIONS.length}`;
+  $("bar").style.width = `${(idx / QUESTIONS.length) * 100}%`;
+  $("quip").classList.remove("show");
+  $("quip").textContent = "";
+
+  const box = $("qbox");
+  box.innerHTML = "";
+  box.classList.remove("q-enter"); void box.offsetWidth; box.classList.add("q-enter");
+
+  const h = document.createElement("h2");
+  h.textContent = item.q;
+  box.appendChild(h);
+
+  const opts = document.createElement("div");
+  opts.className = "opts";
+  shuffle(item.a.map((a, i) => ({ ...a, i }))).forEach(a => {
+    const b = document.createElement("button");
+    b.className = "opt";
+    b.textContent = a.t;
+    b.onclick = () => answer(b, a, item);
+    opts.appendChild(b);
+  });
+  box.appendChild(opts);
+  locked = false;
+}
+
+function answer(btn, a, item) {
+  if (locked) return;
+  locked = true;
+  btn.classList.add("picked");
+  votes.push(a.r);
+  $("quip").textContent = item.quips[a.i] || "";
+  $("quip").classList.add("show");
+  $("bar").style.width = `${((idx + 1) / QUESTIONS.length) * 100}%`;
+  setTimeout(() => {
+    idx++;
+    idx < QUESTIONS.length ? render() : finish();
+  }, 850);
+}
+
+function computeRating() {
+  // Heavier weight on the highest answers: everyone thinks they're as good as their best shot.
+  const sorted = votes.slice().sort((a, b) => b - a);
+  const top = sorted.slice(0, 4).reduce((s, v) => s + v, 0) / 4;
+  const avg = votes.reduce((s, v) => s + v, 0) / votes.length;
+  const SELF_ESTEEM = 1.15; // коэффициент самооценки, научно подобран
+  const ego = (0.35 * top + 0.65 * avg) * SELF_ESTEEM;
+  const chaos = (Math.random() - 0.5) * 120;
+  return Math.max(17, Math.round(ego + chaos));
+}
+
+function finish() {
+  const rating = computeRating();
+  const tierIdx = TIERS.findIndex(t => rating < t.max);
+  const tier = TIERS[tierIdx];
+
+  $("tier").textContent = `${tier.emoji} ${tier.name}`;
+  $("verdict").textContent = tier.verdict;
+  $("tips").innerHTML = "";
+  tier.tips.forEach(t => { const li = document.createElement("li"); li.textContent = t; $("tips").appendChild(li); });
+
+  const real = Math.max(9, Math.round(rating * (0.45 + Math.random() * 0.2)));
+  const partner = Math.max(3, Math.round(rating * (0.25 + Math.random() * 0.2)));
+  $("real").textContent = `~${real}`;
+  $("partner").textContent = `~${partner}`;
+  $("excuse").textContent = pick(EXCUSES);
+  $("shot").textContent = pick(SHOTS_BY_TIER[tierIdx]);
+
+  show("result");
+  $("pin").style.left = "0%";
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    $("pin").style.left = `${Math.min(100, (rating / 4500) * 100)}%`;
+  }));
+  countUp($("score"), rating, 1600);
+
+  window.__last = { rating, tier, real };
+}
+
+function countUp(el, to, ms) {
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) { el.textContent = to; return; }
+  const t0 = performance.now();
+  const step = now => {
+    const p = Math.min(1, (now - t0) / ms);
+    const eased = 1 - Math.pow(1 - p, 3);
+    el.textContent = Math.round(to * eased);
+    if (p < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+async function share() {
+  const { rating, tier, real } = window.__last || {};
+  const text = `Мой психологический рейтинг в racket.id — ${rating} (${tier.name} ${tier.emoji}). Реальный ~${real}, но это детали. А у тебя?`;
+  if (navigator.share) {
+    try { await navigator.share({ text, url: location.href }); return; } catch (e) { if (e.name === "AbortError") return; }
+  }
+  try {
+    await navigator.clipboard.writeText(`${text} ${location.href}`);
+    toast("Скопировано, неси в чат");
+  } catch {
+    toast("Не скопировалось, сделай скрин");
+  }
+}
+
+function toast(msg) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 1800);
+}
+
+$("go").onclick = start;
+$("again").onclick = start;
+$("share").onclick = share;
+</script>
+</body>
+</html>
